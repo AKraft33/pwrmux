@@ -1,7 +1,7 @@
 try:
     import pytest
     import filecmp
-    from pwrmux import *
+    from src.pwrmux.pwrmux import *
 except Exception as e:
     from traceback import format_exception
     exc_str = format_exception(etype=type(e), value=e, tb=e.__traceback__)
