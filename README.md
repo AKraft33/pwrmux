@@ -3,7 +3,7 @@
 
 ---
 
-<h4 align="center"> GPL License 3.0 </h4>
+<h4 align="center"> GPL 3.0 </h4>
 
 ---
 
