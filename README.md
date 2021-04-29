@@ -1,10 +1,12 @@
 <h1 align="center">PWRmux</h1>
-<h3 align="center">Batch Muxing Made Simple</h3>    
+<h4 align="center">Batch Muxing Made Simple</h4>    
 
 ---
-<h3 align="center"> GPL License 3.0 </h3>
+
+<h4 align="center"> GPL License 3.0 </h4>
 
 ---
+
 <h2 align="left"> Getting Started </h2>
 
 Firstly, you must create an options file using MKVToolNixGUI after selecting the settings for the mux that you want performed.
