@@ -1,12 +1,8 @@
-# pwrmux
-Allows batch muxing of files from multiple directories using an options file created by MKVToolNixGUI.
-# usage
-
 <h1 align="center">PWRmux</h1>
 <h3 align="center">Batch Muxing Made Simple</h3>    
 
 ---
-<strong align="Center"> GPL License 3.0 </strong>
+<strong align="center"> GPL License 3.0 </strong>
 ---
 <strong> Usage </strong>
 
