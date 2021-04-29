@@ -1,0 +1,3 @@
+include LICENSE
+include REAMDE.md
+recursive-include src *.py
