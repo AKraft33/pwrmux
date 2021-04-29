@@ -1,16 +1,16 @@
 from distutils.core import setup
 setup(
-  name = 'pwrmux',         # How you named your package folder (MyLib)
-  packages = ['pwrmux'],   # Chose the same as "name"
-  version = '1.0',      # Start with a small number and increase it with every change you make
-  license='GPL V3.0',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
+  name = 'pwrmux',         
+  packages = ['pwrmux'],   
+  version = '1.0',      
+  license='GPL V3.0',        
   description = 'Allows batch muxing of files from multiple directories using an options file created by MKVToolNixGUI.'
   author = 'Adam Kraft',                  
   author_email = 'kraftadam47@gmail.com',      
   url = 'https://github.com/AKraft33/pwrmux',   
-  download_url = 'https://github.com/user/reponame/archive/v_01.tar.gz',    # I explain this later on
-  keywords = ['Mux', 'Video', 'Media'],   # Keywords that define your package best
-  install_requires=[            
+  download_url = 'https://github.com/AKraft33/pwrmux/archive/refs/tags/1.0.tar.gz',
+  keywords = ['Mux', 'Video', 'Media'],   
+  install_requires=[            #other pip projects that this project depends on
           'halo',
           'anitopy',
       ],
