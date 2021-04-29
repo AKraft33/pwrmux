@@ -104,7 +104,7 @@ def get_user_name_scheme_choice(name_choices):
                 continue    
             return user_response - 1  
 
-    print("\nONLY ONE INPUT FILE PER MUX\n\tDefault Name Scheme: {}\n".format(ntpath.basename(name_choices[0])))
+    print("\nDETECTED ONLY ONE INPUT FILE PER MUX\n\tDefault Name Scheme: {}\n".format(ntpath.basename(name_choices[0])))
     return 0
 
 def get_cmd_info_str(current_cmd_num, num_cmds, partner_files, output_file_name):
