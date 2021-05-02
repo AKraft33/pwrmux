@@ -145,49 +145,39 @@ def get_mkv_cmd_list(options_file_path, file_name_scheme_choice, output_dir_path
 
     return cmds
 
-def flush_print(message_list):
-    # clear all and rewrite line
-    sys.stdout.write(f"\r{' '*100}\r")
-    sys.stdout.flush()
-    for message in message_list:
-        sys.stdout.write(message)
-    sys.stdout.flush()
+#wait until the stored processes are done, when they are done remove the assosciated options file 
+def mkvmerge_process_wait(conditional, mkvmerge_processes, total_processes_expected):
+    spinner = Halo(spinner='dots')
+
+    while(conditional(len(mkvmerge_processes))):
+        spinner.start(text='[{}/{} Muxes Finished] Muxing remaining files...'.format(mkvmerge_process_wait.completed_processes, total_processes_expected))
+        sleep(0.5)
+        for index, process_and_options_file in enumerate(mkvmerge_processes):
+            process = process_and_options_file[0]
+            process_options_file_path = process_and_options_file[1]
+
+            if process.poll() != None:
+                #remove the options file assosciated with the mkvmerge process
+                os.remove(process_options_file_path)
+                new_options_file_dir = os.path.dirname(process_options_file_path)
+                if len(os.listdir(new_options_file_dir)) == 0:
+                    os.removedirs(new_options_file_dir)
+
+                mkvmerge_processes.pop(index)                    
+                mkvmerge_process_wait.completed_processes += 1  
+                spinner.stop() 
 
 def run_mux_cmds(cmds, log_file_path):
     log_to_write = []
     detailed_log_to_write = []
     mkvmerge_processes = []
     num_cores = os.cpu_count()
-    global completed_processes
-    completed_processes = 0
 
-    #wait until the stored processes are done, when they are done remove the assosciated options file 
-    #@Halo(text='[{}/{} Muxes Finished] Muxing remaining files...'.format(get_completed_processes(), len(cmds)), spinner='dots')
-    def mkvmerge_process_wait(conditional, mkvmerge_processes):
-        global completed_processes
-        spinner = Halo(spinner='dots')
-        
-        while(conditional(len(mkvmerge_processes))):
-            spinner.start(text='[{}/{} Muxes Finished] Muxing remaining files...'.format(completed_processes, len(cmds)))
-            sleep(0.5)
-            for index, process_and_options_file in enumerate(mkvmerge_processes):
-                process = process_and_options_file[0]
-                process_options_file_path = process_and_options_file[1]
-
-                if process.poll() != None:
-                    #remove the options file assosciated with the mkvmerge process
-                    os.remove(process_options_file_path)
-                    new_options_file_dir = os.path.dirname(process_options_file_path)
-                    if len(os.listdir(new_options_file_dir)) == 0:
-                        os.removedirs(new_options_file_dir)
-
-                    mkvmerge_processes.pop(index)                    
-                    completed_processes += 1  
-                    spinner.stop()                                   
-                   
+    mkvmerge_process_wait.completed_processes = 0
+                                                   
     #run the cmds
     for cmd in cmds:
-        mkvmerge_process_wait(lambda x: x >= num_cores, mkvmerge_processes)
+        mkvmerge_process_wait(lambda x: x >= num_cores, mkvmerge_processes, len(cmds))
         
         updated_options_file_contents = cmd[0]()        
         print(cmd[1])
@@ -204,7 +194,7 @@ def run_mux_cmds(cmds, log_file_path):
         log_writer.writelines(log_to_write) 
         
     #wait for any remaining processes before returning  
-    mkvmerge_process_wait(lambda x: x > 0, mkvmerge_processes)
+    mkvmerge_process_wait(lambda x: x > 0, mkvmerge_processes, len(cmds))
 
 def main(options_file_path):  
 
@@ -224,10 +214,12 @@ def main(options_file_path):
                     input_files_from_options_file = muxing_directories[0]
                     output_dir_path = muxing_directories[1]
 
+                    #TODO make sure that none of the input files are in the same directory as the output directory
+
                     print("Input Directories:")
                     for index, input_file in enumerate(input_files_from_options_file):
-                        print("\t{}: {}".format(index + 1, input_file))
-                    print("Output Directory: \n\t{}".format(output_dir_path))
+                        print("\t{}: {}/".format(index + 1, os.path.dirname(input_file)))
+                    print("Output Directory: \n\t{}/".format(output_dir_path))
 
                     file_name_scheme_choice = get_user_name_scheme_choice(input_files_from_options_file)
                     
