@@ -65,7 +65,7 @@ def get_files_to_mux(input_files_from_options_file):
     #files may not be in same directory
     files_to_mux = {}    
 
-    for index, input_file_path in enumerate(input_files_from_options_file):
+    for input_file_path in input_files_from_options_file:
         #the extension of the input file
         input_file_extension = pathlib.Path(input_file_path).suffix
         files_added = 1
@@ -80,6 +80,11 @@ def get_files_to_mux(input_files_from_options_file):
                     insertion_index = files_added                   
                     if 'episode_number' in parsed_file:
                         insertion_index = parsed_file['episode_number']
+                        #TODO test anitopy names that return a list for episode number 
+                        #ask user to manually input episode number? input can be for every episode or it can be for a rule to select the first, second, ... n element in the episdoe number list                                               
+                        if isinstance(insertion_index, list):
+                            print("Anitopy detected this file's episode number as a list. This may effect the accuracy of the mux.")
+                            insertion_index = insertion_index[0]
 
                     if insertion_index in files_to_mux:
                         files_to_mux[insertion_index].append(entry.path)    
@@ -119,7 +124,13 @@ def get_mkv_cmd_list(options_file_path, file_name_scheme_choice, output_dir_path
     cmds_added = 1
 
     for _, partner_files in files_to_mux.items():
-        output_file_name = ntpath.basename(partner_files[file_name_scheme_choice])
+        #TODO test that this exception will correctly fire
+        try:
+            output_file_name = ntpath.basename(partner_files[file_name_scheme_choice])
+        except Exception as e:
+            print("ERROR: This exception probably means that anitopy did not find consistent episode numbers for your input file names. IE there was an episode 2 in one input directory, but not the other.")    
+            print("ERROR: Check your file names.")
+            raise(e)
         output_file_path = "{}/{}".format(output_dir_path, output_file_name)
 
         new_options_file_path = os.path.dirname(options_file_path) + "/pwrmux_json/options_{}.json".format(cmds_added)
@@ -134,16 +145,30 @@ def get_mkv_cmd_list(options_file_path, file_name_scheme_choice, output_dir_path
 
     return cmds
 
+def flush_print(message_list):
+    # clear all and rewrite line
+    sys.stdout.write(f"\r{' '*100}\r")
+    sys.stdout.flush()
+    for message in message_list:
+        sys.stdout.write(message)
+    sys.stdout.flush()
+
 def run_mux_cmds(cmds, log_file_path):
     log_to_write = []
     detailed_log_to_write = []
     mkvmerge_processes = []
     num_cores = os.cpu_count()
+    global completed_processes
+    completed_processes = 0
 
     #wait until the stored processes are done, when they are done remove the assosciated options file 
-    @Halo(text='Muxing your files...', spinner='dots')
+    #@Halo(text='[{}/{} Muxes Finished] Muxing remaining files...'.format(get_completed_processes(), len(cmds)), spinner='dots')
     def mkvmerge_process_wait(conditional, mkvmerge_processes):
+        global completed_processes
+        spinner = Halo(spinner='dots')
+        
         while(conditional(len(mkvmerge_processes))):
+            spinner.start(text='[{}/{} Muxes Finished] Muxing remaining files...'.format(completed_processes, len(cmds)))
             sleep(0.5)
             for index, process_and_options_file in enumerate(mkvmerge_processes):
                 process = process_and_options_file[0]
@@ -156,12 +181,15 @@ def run_mux_cmds(cmds, log_file_path):
                     if len(os.listdir(new_options_file_dir)) == 0:
                         os.removedirs(new_options_file_dir)
 
-                    mkvmerge_processes.pop(index)
+                    mkvmerge_processes.pop(index)                    
+                    completed_processes += 1  
+                    spinner.stop()                                   
+                   
     #run the cmds
     for cmd in cmds:
         mkvmerge_process_wait(lambda x: x >= num_cores, mkvmerge_processes)
+        
         updated_options_file_contents = cmd[0]()        
-
         print(cmd[1])
         log_to_write.append(cmd[1])
         detailed_log_to_write.append(cmd[1])
