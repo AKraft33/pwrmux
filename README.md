@@ -21,7 +21,7 @@ Example Mux:
     <li>Muxing video and audio from /video/Cool Show E01.mkv </li>
     <li>Saving video as /finished_mux/Cool Show E01.mkv </li>
     <li>
-    This software will take the settings (as an options file) you used to mux "Cool Show E01.srt" and "Cool Show E01.mkv" and apply them to every file in the "subtitles" and "video" directories that those two original files are stored in. The muxes will be mapped such that "Cool Show E02.srt" will be mapped to "Cool Show E02.mkv" and so on for each file in the directories that contained the two original files. 
+    This software will take the above settings (as an options file) to mux "Cool Show E01.srt" and "Cool Show E01.mkv"; then, pwrmux will apply those options to every file in the "subtitles" and "video" directories that those two original input files are stored in. The muxes will be mapped such that "Cool Show E02.srt" will be mapped to "Cool Show E02.mkv" and so on for each file in the directories that contained the two original files. 
     </li>
 </ul>
 
