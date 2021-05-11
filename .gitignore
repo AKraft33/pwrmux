@@ -8,6 +8,9 @@
 #ignore json files from options
 *.json
 
+#ignore bash scripts - has personal file structure - change later if we want to make a build script
+*.sh
+
 # temporary files which can be created if a process still has a handle open of a deleted file
 .fuse_hidden*
 
