@@ -2,7 +2,7 @@ try:
     import os
     import sys
     import ntpath
-    import subprocess
+    #import subprocess
     import pathlib
     import anitopy
     import functools
@@ -13,6 +13,10 @@ except Exception as e:
     from traceback import format_exception
     exc_str = format_exception(etype=type(e), value=e, tb=e.__traceback__)
     print("{} Some modules are missing {}.\n Traceback: \n {} \n".format(__file__, e, exc_str))   
+
+#TODO when muxing subs and mkv the only file to produce is a .mkv - you wouldn't mux an .mkv with a subtitle file and not produce an mkv
+#TODO give better error message when input files don't match IE given 11 files in one input directory and only 10 files in another input directory
+#TODO when anitopy fails - use the len of the list to match files for muxing - get user confirmation
 
 def update_options_file(options_file_path, new_options_file_path, output_file_path, input_files_to_mux):
     options_file_contents = None
@@ -91,7 +95,16 @@ def get_files_to_mux(input_files_from_options_file):
                     else:
                         files_to_mux[insertion_index] = [entry.path]   
 
-                    files_added += 1  
+                    files_added += 1 
+    #confirm that each mux_file_group is the same length. If not then one input directory has more files than the other                
+    confirm_files_are_mapped_properly = {}                
+    for mux_file_group in files_to_mux.values():
+        confirm_files_are_mapped_properly[len(mux_file_group)] = 0
+    if len(confirm_files_are_mapped_properly) > 1:
+        print("Files could not be mapped properly!")    
+        print("One of your directories has more files than the other")
+        return None
+
     return files_to_mux  
 
 def get_user_name_scheme_choice(name_choices):            
@@ -103,7 +116,7 @@ def get_user_name_scheme_choice(name_choices):
             print("\nYOUR CHOICE WILL BE USED FOR EVERY FILE BEING MUXED.\n")
             try:
                 user_response = int(input("Your response: "))
-                if user_response <= 0 or user_response > len(name_choices):
+                if user_response < 1 or user_response > len(name_choices):
                     continue
             except Exception:
                 continue    
@@ -113,7 +126,7 @@ def get_user_name_scheme_choice(name_choices):
     return 0
 
 def get_cmd_info_str(current_cmd_num, num_cmds, partner_files, output_file_name):
-    cmd_info_print = "[{}/{}] Performing mux for:".format(current_cmd_num, num_cmds)
+    cmd_info_print = "[{}/{}] Started mux for:".format(current_cmd_num, num_cmds)
     for index, partner_file in enumerate(partner_files):
         cmd_info_print += "\n\t{}: {}".format(index + 1, ntpath.basename(partner_file))
     cmd_info_print += "\n\tOUTPUT FILE: {}\n".format(output_file_name)
@@ -124,7 +137,6 @@ def get_mkv_cmd_list(options_file_path, file_name_scheme_choice, output_dir_path
     cmds_added = 1
 
     for _, partner_files in files_to_mux.items():
-        #TODO test that this exception will correctly fire
         try:
             output_file_name = ntpath.basename(partner_files[file_name_scheme_choice])
         except Exception as e:
@@ -152,6 +164,7 @@ def mkvmerge_process_wait(conditional, mkvmerge_processes, total_processes_expec
     while(conditional(len(mkvmerge_processes))):
         spinner.start(text='[{}/{} Muxes Finished] Muxing remaining files...'.format(mkvmerge_process_wait.completed_processes, total_processes_expected))
         sleep(0.5)
+        #check if any of the processes are finished, instead of waiting for an arbitrary one to finish
         for index, process_and_options_file in enumerate(mkvmerge_processes):
             process = process_and_options_file[0]
             process_options_file_path = process_and_options_file[1]
@@ -196,6 +209,25 @@ def run_mux_cmds(cmds, log_file_path):
     #wait for any remaining processes before returning  
     mkvmerge_process_wait(lambda x: x > 0, mkvmerge_processes, len(cmds))
 
+#input_file_name would come from the command line
+#if input_file_name is None then we check if the default options.json is in the current working directory
+def confirm_options_file_path(input_file_name = None):
+    options_file_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) + "/" + 'options.json'    
+
+    if input_file_name != None:
+        options_file_path = input_file_name
+        print("Options File (INPUT): {}".format(options_file_path))
+    else:
+        print("Options File (DEFAULT): {}".format(options_file_path))  
+
+    #make sure the options file exists
+    if not os.path.exists(options_file_path):
+        print("That options file does not exist!")
+        print("You can enter the path manually if needed: $ python pwrmux.py example/path/options.json")
+        return None
+
+    return options_file_path 
+
 def main(options_file_path):  
 
     original_options_file_contents = None
@@ -214,24 +246,33 @@ def main(options_file_path):
                     input_files_from_options_file = muxing_directories[0]
                     output_dir_path = muxing_directories[1]
 
-                    #TODO make sure that none of the input files are in the same directory as the output directory
+                    input_dir_is_output_dir = False
+                    for input_file in input_files_from_options_file:
+                        if os.path.dirname(input_file) == output_dir_path:
+                            print("One of your input directories is the same as the output directory")
+                            print("\tINPUT:", os.path.dirname(input_file))
+                            print("\tOUTPUT:", output_dir_path)
 
-                    print("Input Directories:")
-                    for index, input_file in enumerate(input_files_from_options_file):
-                        print("\t{}: {}/".format(index + 1, os.path.dirname(input_file)))
-                    print("Output Directory: \n\t{}/".format(output_dir_path))
+                            input_dir_is_output_dir = True                            
+                            break
 
-                    file_name_scheme_choice = get_user_name_scheme_choice(input_files_from_options_file)
-                    
-                    #files_to_mux is a dict where each element is a list containing two files that are to be muxed
-                    files_to_mux = get_files_to_mux(input_files_from_options_file)                                
+                    if not input_dir_is_output_dir:                                
+                        print("Input Directories:")
+                        for index, input_file in enumerate(input_files_from_options_file):
+                            print("\t{}: {}/".format(index + 1, os.path.dirname(input_file)))
+                        print("Output Directory: \n\t{}/".format(output_dir_path))
 
-                    cmds = get_mkv_cmd_list(options_file_path, file_name_scheme_choice, output_dir_path, files_to_mux)
+                        file_name_scheme_choice = get_user_name_scheme_choice(input_files_from_options_file)
+                        
+                        #files_to_mux is a dict where each element is a list containing two files that are to be muxed
+                        files_to_mux = get_files_to_mux(input_files_from_options_file)                                
 
-                    log_file_path = output_dir_path + '/muxlog.txt'
-                    run_mux_cmds(cmds, log_file_path)  
+                        cmds = get_mkv_cmd_list(options_file_path, file_name_scheme_choice, output_dir_path, files_to_mux)
 
-                    print('Muxing finished!\n\tAll files muxed to :{}\n\tLog file written to :{}'.format(output_dir_path, log_file_path))
+                        log_file_path = output_dir_path + '/muxlog.txt'
+                        run_mux_cmds(cmds, log_file_path)  
+
+                        print('Muxing finished!\n\tAll files muxed to :{}\n\tLog file written to :{}'.format(output_dir_path, log_file_path))
                 except Exception as e:
                     #restore the original options file if something goes south
                     #in normal operation the original options file is only read from not written to
@@ -243,24 +284,6 @@ def main(options_file_path):
 
         else:
             print("Could not open options file - {}.".format(options_file_path))
-
-#input_file_name would come from the command line
-#if input_file_name is None then we check if the default options.json is in the current working directory
-def confirm_options_file_path(input_file_name = None):
-    options_file_path = os.getcwd() + "/" + 'options.json'
-    if input_file_name != None:
-        options_file_path = input_file_name
-        print("Options File (INPUT): {}".format(options_file_path))
-    else:
-        print("Options File (DEFAULT): {}".format(options_file_path))  
-
-    #make sure the options file exists
-    if not os.path.exists(options_file_path):
-        print("That options file does not exist!")
-        print("You can enter the path manually if needed: $ python pwrmux.py example/path/options.json")
-        return None
-
-    return options_file_path 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

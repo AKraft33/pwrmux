@@ -268,7 +268,7 @@ class Temp_Path(object):
 def test_confirm_options_file_path(options_file_path, options_file_exists):                
     existing_options_file_contents = None
     #options.json is a special case - it is the default file checked for even when options_file_path is None
-    existing_options_file_path = os.getcwd() + '/options.json' 
+    existing_options_file_path = os.path.dirname(os.path.dirname(__file__)) + "/" + 'options.json'  
     print("Looking for: ", existing_options_file_path)
 
     #if there is already an options.json in the cwd()               
@@ -389,9 +389,9 @@ def test_get_user_name_scheme_choice(monkeypatch, name_scheme_choice, name_schem
 
 @pytest.mark.parametrize(
     "current_cmd_num, num_cmds, partner_files, output_file_path, expected_str", [
-        (1, 1, ['test1.mkv'], 'out/test1.mkv', '[1/1] Performing mux for:\n\t1: test1.mkv\n\tOUTPUT FILE: out/test1.mkv\n'),
-        (1, 1, ['test1.mkv', 'test2.mkv'], 'out/test1.mkv', '[1/1] Performing mux for:\n\t1: test1.mkv\n\t2: test2.mkv\n\tOUTPUT FILE: out/test1.mkv\n'),
-        (2, 16, ['test1.mkv', 'test2.mkv','test3.mkv'], 'out/test1.mkv', '[2/16] Performing mux for:\n\t1: test1.mkv\n\t2: test2.mkv\n\t3: test3.mkv\n\tOUTPUT FILE: out/test1.mkv\n'),
+        (1, 1, ['test1.mkv'], 'out/test1.mkv', '[1/1] Started mux for:\n\t1: test1.mkv\n\tOUTPUT FILE: out/test1.mkv\n'),
+        (1, 1, ['test1.mkv', 'test2.mkv'], 'out/test1.mkv', '[1/1] Started mux for:\n\t1: test1.mkv\n\t2: test2.mkv\n\tOUTPUT FILE: out/test1.mkv\n'),
+        (2, 16, ['test1.mkv', 'test2.mkv','test3.mkv'], 'out/test1.mkv', '[2/16] Started mux for:\n\t1: test1.mkv\n\t2: test2.mkv\n\t3: test3.mkv\n\tOUTPUT FILE: out/test1.mkv\n'),
     ]
 )
 def test_get_cmd_info_str(current_cmd_num, num_cmds, partner_files, output_file_path, expected_str):
